@@ -1,11 +1,14 @@
 import argparse
 import os
 import shutil
-from langchain.document_loaders.pdf import PyPDFDirectoryLoader
+from langchain.document_loaders import PyPDFLoader
+from langchain.document_loaders.text import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from get_embedding_function import get_embedding_function
 from langchain.vectorstores.chroma import Chroma
+
+from pathlib import Path
 
 
 CHROMA_PATH = "chroma"
@@ -27,10 +30,38 @@ def main():
     chunks = split_documents(documents)
     add_to_chroma(chunks)
 
+def DirectoryLoader(path):
+    p = Path(path)
+    docs = []
+    text_items = p.rglob("**/[!.]*.txt")
+    for i in text_items:
+        if i.is_file():
+            try:
+                loader = TextLoader(str(i), encoding='utf-8')
+                sub_docs = loader.load()
+                for doc in sub_docs:
+                    doc.metadata["source"] = str(i)
+                docs.extend(sub_docs)
+            except Exception as e:
+                raise e
+    
+    pdf_items = p.rglob("**/[!.]*.pdf")
+    for i in pdf_items:
+        if i.is_file():
+            try:
+                loader = PyPDFLoader(str(i))
+                sub_docs = loader.load()
+                for doc in sub_docs:
+                    doc.metadata["source"] = str(i)
+                docs.extend(sub_docs)
+            except Exception as e:
+                raise e        
+    
+    return docs
 
 def load_documents():
-    document_loader = PyPDFDirectoryLoader(DATA_PATH)
-    return document_loader.load()
+    document = DirectoryLoader(DATA_PATH)
+    return document
 
 
 def split_documents(documents: list[Document]):
