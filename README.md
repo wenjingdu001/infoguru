@@ -27,10 +27,10 @@ This documentation provides step-by-step instructions for setting up a local AI 
 ### Step 1: Enable WSL
 1. Open PowerShell as Administrator and run:
 
-    ```powershell
-    wsl --install
-    ```
-    This command installs WSL along with the default Linux distribution, which is typically Ubuntu. It sets up the necessary components for running Linux on Windows.
+    ```powershell
+    wsl --install
+    ```
+    This command installs WSL along with the default Linux distribution, which is typically Ubuntu. It sets up the necessary components for running Linux on Windows.
 
 1. Restart your computer if prompted.
 
@@ -45,11 +45,12 @@ This documentation provides step-by-step instructions for setting up a local AI 
 1. Navigate to `C:\Users\<your_username>`.
 1. Create a file named `.wslconfig`.
 1. Within the file, paste:
-    ```
-    [wsl2]
-    networkingMode=bridged
-    vmSwitch=wsl-nic
-    ```
+
+    ```
+    [wsl2]
+    networkingMode=bridged
+    vmSwitch=wsl-nic
+    ```
     Setting the network mode to bridged ensures that your WSL environment gets an IP address on the same network as your home network. This allows Docker containers to communicate with other devices on your local network.
 
 ### Step 2: Change Network Mode
@@ -64,15 +65,15 @@ This documentation provides step-by-step instructions for setting up a local AI 
 ## 4. Create a Docker Bridge Network for Containers
 1. Open Ubuntu from the start menu
 1. Create a Docker bridge network driver called `myllm` to allow communication between three Docker containers: Open WebUI, Ollama, and Stable Diffusion by running the following command:
-    ```bash
-    sudo docker network create --driver bridge myllm
-    ```
-    Creating a custom bridge network named myllm allows your containers to communicate with each other while isolating them from other networks. This setup ensures that the containers used for Open WebUI, Ollama, and Stable Diffusion can interact seamlessly.
+    ```bash
+    sudo docker network create --driver bridge myllm
+    ```
+    Creating a custom bridge network named myllm allows your containers to communicate with each other while isolating them from other networks. This setup ensures that the containers used for Open WebUI, Ollama, and Stable Diffusion can interact seamlessly.
 
 1. You can view the details of this network by running the following command:
-    ```bash
-    sudo docker inspect myllm
-    ```
+    ```bash
+    sudo docker inspect myllm
+    ```
 
 ## 5. Setup the Ollama Container
 
@@ -94,15 +95,15 @@ sudo docker run -d --network myllm -v ollama:/root/.ollama -e OLLAMA_KEEP_ALIVE=
 
 ### Step 2: Pull the Llama3 Model
 1. Access the container shell:
-    ```bash
-    sudo docker exec -it ollama sh
-    ```
-    This allows you to run commands inside the container environment.
+    ```bash
+    sudo docker exec -it ollama sh
+    ```
+    This allows you to run commands inside the container environment.
 1. Pull the Llama3.1 model:
-    ```bash
-    ollama pull llama3.1:70b
-    ```
-    Pulling the Llama3.1 model is necessary for the container to utilize this specific model for its operations. The `llama3.1:70b` model will take 40GB memory. If you prefer something lighter, use `llama3.1:8b` instead which only takes about 5GB.
+    ```bash
+    ollama pull llama3.1:70b
+    ```
+    Pulling the Llama3.1 model is necessary for the container to utilize this specific model for its operations. The `llama3.1:70b` model will take 40GB memory. If you prefer something lighter, use `llama3.1:8b` instead which only takes about 5GB.
 
 1. Press `ctrl + d` to exit the container shell.
 
@@ -110,15 +111,16 @@ sudo docker run -d --network myllm -v ollama:/root/.ollama -e OLLAMA_KEEP_ALIVE=
 
 ### Step 1: Clone the Repository
 We will use the AbdBarho's repo for setting up the container of Stable Diffusion.
-``` bash
+```bash
 git clone https://github.com/AbdBarho/stable-diffusion-webui-docker
 ```
 
 ### Step 2: Modify the Dockerfile
 1. Navigate to the Dockerfile:
-    ```bash
-    cd stable-diffusion-webui-docker/services/AUTOMATIC1111/
-    ```
+    ``` bash
+    cd stable-diffusion-webui-docker/services/AUTOMATIC1111/
+    ```
+
 1. Edit the Dockerfile to add `--api` to `CLI_ARGS`. This step enables API functionality for the Stable Diffusion service, allowing it to interact programmatically.
 
 ###  Step 3: Follow Setup Instructions
@@ -132,20 +134,21 @@ sudo docker network connect myllm webui-docker
 Connecting the container to the myllm network allows it to communicate with other containers on the same network, such as Ollama and Open WebUI. 
 
 ## 7. Setup the Open WebUI Container
-1. Create and Run the Container
-    ```bash
-    sudo docker run -d -p 8080:8080 --network myllm -e OLLAMA_BASE_URL=http://ollama:11434 --gpus all -v open-webui:/app/backend/data --name open-webui --restart unless-stopped ghcr.io/open-webui/open-webui:main
-    ```
+### Step 1: Create and Run the Container
+```bash
+sudo docker run -d -p 8080:8080 --network myllm -e OLLAMA_BASE_URL=http://ollama:11434 --gpus all -v open-webui:/app/backend/data --name open-webui --restart unless-stopped ghcr.io/open-webui/open-webui:main
+```
+- `-d`: Runs the container in detached mode.
+- `-p 8080:8080`: Maps the container's port 8080 to the host’s port 8080 for access.
+- `--network myllm`: Connects the container to the myllm network.
+- `-e OLLAMA_BASE_URL=http://ollama:11434`: Sets the environment variable to connect to the Ollama service.
+- `--gpus all`: Grants access to all available GPUs.
+- `-v open-webui:/app/backend/data`: Mounts a volume for persistent storage of Open WebUI data.
+- `--name open-webui`: Assigns the container a name for easy management.
+- `--restart unless-stopped`: Ensures the container restarts unless manually stopped.
+- `ghcr.io/open-webui/open-webui:main`: Specifies the Docker image to use.
 
-    - `-d`: Runs the container in detached mode.
-    - `-p 8080:8080`: Maps the container's port 8080 to the host’s port 8080 for access.
-    - `--network myllm`: Connects the container to the myllm network.
-    - `-e OLLAMA_BASE_URL=http://ollama:11434`: Sets the environment variable to connect to the Ollama service.
-    - `--gpus all`: Grants access to all available GPUs.
-    - `-v open-webui:/app/backend/data`: Mounts a volume for persistent storage of Open WebUI data.
-    - `--name open-webui`: Assigns the container a name for easy management.
-    - `--restart unless-stopped`: Ensures the container restarts unless manually stopped.
-    - `ghcr.io/open-webui/open-webui:main`: Specifies the Docker image to use.
+### Step 2: Access Open WebUI 
+Open your web browser and go to: `http://<yourIPaddress>:8080`. 
 
-1. Access Open WebUI by opening your web browser and going to:
-`http://<yourIPaddress>:8080`. Replace `<yourIPaddress>` with the IP address assigned to your WSL environment, or use `localhost`.
+Replace `<yourIPaddress>` with the IP address assigned to your WSL environment, or use `localhost`.
