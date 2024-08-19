@@ -1,0 +1,16 @@
+project:
+  name: "infoguru-app"
+  description: "An app to query documents and get responses using Local LLM"
+  version: "0.1.0"
+  author: "Wenjing Du"
+  homepage: "http://localhost:8000"
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  log_level: "info"
+
+ui:
+  title: "InfoGuru"
+  favicon: "path/to/favicon.ico"
+  theme: "light"

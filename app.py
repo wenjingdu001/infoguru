@@ -1,30 +1,33 @@
-from flask import Flask, request, render_template, Markup
-from query_data import query_rag
-import jinja2
+import chainlit as cl
+from scripts.query_data import query_rag
 
+@cl.on_chat_start
+def start():
+    cl.user_session.set("history", [])
+    print("Chat session started and history initialized.")
 
-app = Flask(__name__)
+@cl.on_message
+async def main(message: cl.Message):
 
-# Custom filter to convert newlines to <br> tags
-def nl2br(value):
-    return Markup(value.replace("\n", "<br>\n"))
+    history = cl.user_session.get("history")
+    query_text = message.content
 
-# Register the custom filter
-app.jinja_env.filters['nl2br'] = nl2br
+    processing_message = cl.Message(
+        content="Processing your query..."
+    )
+    await processing_message.send()
 
-@app.route('/', methods=['GET', 'POST'])
-def query():
-    if request.method == 'POST':
-        query_text = request.form['query']
-        if query_text:
-            try:
-                response = query_rag(query_text)
-                return render_template('index.html', query=query_text, response=response)
-            except Exception as e:
-                return render_template('index.html', error=f"An error occurred: {e}")
-        else:
-            return render_template('index.html', error="Please enter a query")
-    return render_template('index.html')
+    try:        
+        # Call query_rag and log the result
+        result = await cl.make_async(query_rag)(query_text)
+        history.append((query_text, result))
+    except Exception as e:
+        response = f"An error occurred: {e}"
+    await processing_message.remove()
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    final_message = cl.Message(content=f"Response: {result['response']}\n\n---\n\nSources: {result['source']}")
+    await final_message.send()
+
+if __name__ == "__main__":
+    cl.run()
+    print("Chainlit application running.")

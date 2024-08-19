@@ -1,0 +1,30 @@
+networks:
+  nginx-proxy-manager_default:
+    external: true
+
+services:
+  rag_app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/chroma:/usr/src/app/data/chroma
+      - .:/usr/src/app
+    depends_on:
+      - database_populator
+    networks:
+      - nginx-proxy-manager_default
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    restart: unless-stopped
+    
+
+  database_populator:
+    build:
+      context: .
+      dockerfile: scripts/Dockerfile
+    volumes:
+      - ./data/chroma:/usr/src/app/data/chroma
+      - ./data:/usr/src/app/data
+    networks:
+      - nginx-proxy-manager_default
